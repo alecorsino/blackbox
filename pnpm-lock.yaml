@@ -15,11 +15,11 @@ importers:
         specifier: ^5.0.10
         version: 5.4.21(@types/node@20.19.24)
 
-  packages/cli:
+  demos/cli:
     dependencies:
       '@blackbox/protocol':
         specifier: workspace:*
-        version: link:../protocol
+        version: link:../../packages/protocol
     devDependencies:
       '@types/node':
         specifier: ^20.10.6

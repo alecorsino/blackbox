@@ -20,7 +20,7 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      '@blackbox/protocol': resolve(__dirname, '../protocol/src/index.ts')
+      '@blackbox/protocol': resolve(__dirname, '../../packages/protocol/src/index.ts')
     }
   }
 });

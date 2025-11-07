@@ -31,7 +31,7 @@ pnpm --filter blackbox-cli dev
 ## Structure
 
 - `packages/protocol/` - The core @blackbox/protocol library
-- `packages/cli/` - The terminal demo app
+- `demos/cli/` - The terminal demo app
 
 ## Troubleshooting
 

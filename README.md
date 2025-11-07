@@ -32,16 +32,17 @@ That's it. Forever.
 ```
 blackbox/
 ├── packages/
-│   ├── protocol/          # @blackbox/protocol - The runtime library
-│   │   └── src/
-│   │       ├── types.ts
-│   │       ├── runtime.ts
-│   │       ├── plugs.ts
-│   │       └── index.ts
-│   └── cli/               # blackbox-cli - Terminal demo app
+│   └── protocol/          # @blackbox/protocol - The runtime library
 │       └── src/
-│           ├── shopping.blackbox.ts
+│           ├── types.ts
+│           ├── runtime.ts
+│           ├── plugs.ts
 │           └── index.ts
+└── demos/
+    └── cli/               # blackbox-cli - Terminal demo app
+        └── src/
+            ├── shopping.blackbox.ts
+            └── index.ts
 ```
 
 ## Quick Start
@@ -169,7 +170,7 @@ We use state machine concepts under the hood, but expose a developer experience 
 
 ## The Terminal Demo
 
-The CLI app ([packages/cli](packages/cli)) is a full shopping journey orchestrator:
+The CLI app ([demos/cli](demos/cli)) is a full shopping journey orchestrator:
 
 - 🔍 Search products
 - 🛒 Add to cart

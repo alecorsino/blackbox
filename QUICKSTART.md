@@ -85,7 +85,7 @@ pnpm cli
 
 ## Next Steps
 
-1. **Explore the Recipe**: Check out `packages/cli/src/shopping.blackbox.ts` to see how phases, actions, and plugs work together
+1. **Explore the Recipe**: Check out `demos/cli/src/shopping.blackbox.ts` to see how phases, actions, and plugs work together
 2. **Modify the Flow**: Add new phases, change transitions, swap plugs
 3. **Create Your Own**: Copy the shopping recipe and adapt it to your own business journey
 4. **Use the Library**: Import `@blackbox/protocol` in any TypeScript project
@@ -94,8 +94,8 @@ pnpm cli
 
 - **`packages/protocol/src/runtime.ts`** - The core interpreter that runs blackbox recipes
 - **`packages/protocol/src/types.ts`** - All TypeScript interfaces
-- **`packages/cli/src/shopping.blackbox.ts`** - A complete example recipe
-- **`packages/cli/src/index.ts`** - How to consume the protocol in a real app
+- **`demos/cli/src/shopping.blackbox.ts`** - A complete example recipe
+- **`demos/cli/src/index.ts`** - How to consume the protocol in a real app
 
 ## The Developer Experience
 
