@@ -1,0 +1,21 @@
+{
+  "name": "blackbox-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Blackbox Protocol - API Orchestration Without the Glue",
+  "scripts": {
+    "dev": "pnpm --filter blackbox-cli dev",
+    "build": "pnpm -r build",
+    "cli": "pnpm --filter blackbox-cli start"
+  },
+  "keywords": ["blackbox", "orchestration", "api", "workflow", "state-machine"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10"
+  },
+  "pnpm": {
+    "overrides": {}
+  }
+}

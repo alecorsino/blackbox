@@ -1,0 +1,19 @@
+{
+  "name": "blackbox-cli",
+  "version": "0.1.0",
+  "description": "Terminal demo for Blackbox Protocol",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@blackbox/protocol": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "typescript": "^5.3.3",
+    "vite": "^5.0.10"
+  }
+}
