@@ -1,6 +1,10 @@
+// Blackbox Protocol CLI v1.3
+// Demonstrates separation of program (protocol) from plugs (implementation)
+
 import * as readline from 'readline';
-import shoppingBlackbox from './shopping.blackbox';
-import type { Blackbox, ActionMeta } from '@blackbox/protocol';
+import shoppingProgram from './shopping.blackbox';
+import { createBlackbox, mock, assign } from '@blackbox/protocol';
+import type { Blackbox, ActionMeta, Plug } from '@blackbox/protocol';
 
 // Terminal colors
 const colors = {
@@ -15,12 +19,73 @@ const colors = {
   blue: '\x1b[34m'
 };
 
+// v1.3: Plugs are separate from program - pure implementation (HOW APIs work)
+const plugs: Record<string, Plug> = {
+  // Service plugs (async operations)
+  searchProducts: mock(
+    {
+      products: [
+        { id: '1', name: 'Laptop Pro', price: 1299 },
+        { id: '2', name: 'Wireless Mouse', price: 29 },
+        { id: '3', name: 'Mechanical Keyboard', price: 149 },
+        { id: '4', name: 'USB-C Hub', price: 79 }
+      ]
+    },
+    500
+  ),
+
+  addToCart: async (data: any, input: any) => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    // input contains { productId, products } from invoke.input
+    const product = input.products.find((p: any) => p.id === input.productId);
+    if (!product) throw new Error('Product not found');
+    return { item: { ...product, cartItemId: `cart-${Date.now()}` } };
+  },
+
+  removeFromCart: async (data: any, input: any) => {
+    await new Promise(resolve => setTimeout(resolve, 300));
+    return { itemId: input.itemId };
+  },
+
+  processPayment: mock(
+    { orderId: `ORDER-${Math.random().toString(36).substring(7).toUpperCase()}`, success: true },
+    1000
+  ),
+
+  // Action plugs (immutable data updates using assign)
+  storeProducts: assign((data, event) => ({
+    products: event.data.products
+  })),
+
+  addItemToCart: assign((data, event) => ({
+    cart: [...data.cart, event.data.item]
+  })),
+
+  removeItemFromCart: assign((data, event) => ({
+    cart: data.cart.filter((item: any) => item.cartItemId !== event.data.itemId)
+  })),
+
+  storeOrderId: assign((data, event) => ({
+    orderId: event.data.orderId
+  })),
+
+  logError: (data: any, event: any) => {
+    console.error('❌ Error:', event.error?.message || 'Unknown error');
+    return {};
+  },
+
+  // Guard plugs
+  hasProductId: (data: any, event: any) => {
+    return !!event.productId;
+  }
+};
+
 class BlackboxCLI {
   private rl: readline.Interface;
   private session: Blackbox;
   private actions: Record<string, ActionMeta>;
 
-  constructor(blackbox: ReturnType<typeof shoppingBlackbox>, actions: Record<string, ActionMeta>) {
+  constructor(session: Blackbox, actions: Record<string, ActionMeta>) {
     // Disable terminal echo to prevent double characters
     if (process.stdin.isTTY) {
       process.stdin.setRawMode(false);
@@ -33,7 +98,7 @@ class BlackboxCLI {
     });
 
     this.actions = actions;
-    this.session = blackbox.start({ userId: 'cli-user-123' });
+    this.session = session;
 
     // Listen for events
     this.session.on('error', (error) => {
@@ -56,10 +121,13 @@ class BlackboxCLI {
   private printBanner() {
     console.log(`${colors.cyan}${colors.bright}`);
     console.log('┌─────────────────────────────────────────┐');
-    console.log('│       🎮 BLACKBOX PROTOCOL v1.0        │');
+    console.log('│       🎮 BLACKBOX PROTOCOL v1.3        │');
     console.log('│      Shopping Journey Orchestrator      │');
     console.log('└─────────────────────────────────────────┘');
     console.log(colors.reset);
+    console.log(`${colors.dim}Program: Pure protocol (no implementation)${colors.reset}`);
+    console.log(`${colors.dim}Plugs: Runtime implementations (swappable)${colors.reset}`);
+    console.log('');
   }
 
   private printState() {
@@ -137,7 +205,8 @@ class BlackboxCLI {
 
     const params: any = {};
 
-    for (const [key, type] of Object.entries(meta.params)) {
+    for (const [key, fieldSchema] of Object.entries(meta.params)) {
+      const type = (fieldSchema as any).type || 'string';
       const input = await this.question(`  ${colors.yellow}Enter ${key} (${type}):${colors.reset} `);
       params[key] = input.trim();
     }
@@ -165,7 +234,7 @@ class BlackboxCLI {
     await this.loop();
   }
 
-  private async loop() {
+  private async loop(): Promise<void> {
     // Wait for loading to complete
     while (this.session.isBusy()) {
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -219,33 +288,22 @@ class BlackboxCLI {
   }
 }
 
-// Start the CLI
-const cli = new BlackboxCLI(shoppingBlackbox, shoppingBlackbox.start({ userId: 'temp' }).where().phase ? {} : {});
-// Get actions from the blackbox config
-import shoppingConfig from './shopping.blackbox';
-const tempSession = shoppingBlackbox.start({ userId: 'temp' });
-// We need to extract actions from the config - for now, hardcode the reference
-// In production, we'd export actions separately from the blackbox file
+// v1.3: Create blackbox from pure program, inject plugs at runtime
+console.log(`${colors.cyan}${colors.bright}Initializing Blackbox Protocol v1.3...${colors.reset}`);
+console.log(`${colors.dim}Loading program: shopping-journey v${shoppingProgram.version}${colors.reset}`);
+console.log(`${colors.dim}Injecting runtime plugs...${colors.reset}`);
+console.log('');
 
-// Simplified: re-import to get actions metadata
-const { default: shopping } = await import('./shopping.blackbox');
+const blackbox = createBlackbox(shoppingProgram);
+const session = blackbox.start({ userId: 'cli-user-123' });
 
-// Create CLI with proper actions metadata
-// For now, let's embed actions in a cleaner way
-const actionsMetadata = {
-  START: { label: 'Start shopping', description: 'Begin your shopping journey' },
-  SEARCH: { label: 'Search products', description: 'Search for products', params: { query: 'string' } },
-  SEARCH_AGAIN: { label: 'Search again', description: 'Try a different search' },
-  ADD_TO_CART: { label: 'Add to cart', description: 'Add product to cart', params: { productId: 'string' } },
-  VIEW_CART: { label: 'View cart', description: "See what's in your cart" },
-  CONTINUE_SHOPPING: { label: 'Continue shopping', description: 'Go back to browsing' },
-  REMOVE_ITEM: { label: 'Remove item', description: 'Remove from cart', params: { itemId: 'string' } },
-  CHECKOUT: { label: 'Checkout', description: 'Proceed to payment' },
-  PAY: { label: 'Pay now', description: 'Complete your purchase' },
-  CANCEL: { label: 'Cancel', description: 'Go back' },
-  RETRY: { label: 'Retry', description: 'Try again' },
-  QUIT: { label: 'Quit', description: 'Exit the app' }
-};
+// v1.3: Plugs injected after session creation!
+session.use(plugs);
 
-const app = new BlackboxCLI(shoppingBlackbox, actionsMetadata);
+console.log(`${colors.green}✓ Session created${colors.reset}`);
+console.log(`${colors.green}✓ Plugs injected${colors.reset}`);
+console.log('');
+
+// Start CLI with session
+const app = new BlackboxCLI(session, shoppingProgram.actions);
 app.start().catch(console.error);

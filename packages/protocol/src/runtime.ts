@@ -1,4 +1,4 @@
-// Blackbox Protocol Runtime - The interpreter implementing STATE_MACHINE_SPEC.md
+// Blackbox Protocol Runtime - The interpreter implementing STATE_MACHINE_SPEC_v1.3.md
 
 import type {
   BlackboxConfig,
@@ -11,18 +11,20 @@ import type {
   PlugMetadata,
   HistoryEntry,
   Snapshot,
-  Introspection
+  Introspection,
+  DataSchema,
+  ValidationResult
 } from './types';
+import { validateSchema, resolveModelRef, validatePlugs as validatePlugsAgainstOps, ValidationError } from './validation';
 
 type EventCallback = (data: any) => void;
 
 export function createBlackbox(config: BlackboxConfig): {
   start(initialData?: any): Blackbox;
   restore(snapshot: Snapshot): Blackbox;
-  use(plugs: Record<string, Plug>): void;
 } {
-  // Mutable plugs - can be swapped at runtime
-  let plugs = { ...config.plugs };
+  // v1.3: Plugs are NOT in config - provided via session.use()
+  let plugs: Record<string, Plug> = {};
 
   // Normalize plugs (handle PlugMetadata wrapper)
   function getPlugFunction(plug: Plug): PlugFunction {
@@ -57,11 +59,16 @@ export function createBlackbox(config: BlackboxConfig): {
         listeners[event]?.forEach(cb => cb(payload));
       }
 
-      // Execute a plug (action, service, or guard)
+      // Execute a plug (action, service, or guard) with validation
       async function executePlug(plugName: string, event: any, computedInput?: any): Promise<any> {
         const plug = plugs[plugName];
         if (!plug) {
-          throw new Error(`Plug "${plugName}" not found`);
+          throw new Error(`Plug "${plugName}" not provided. Use session.use({...}) to inject plugs.`);
+        }
+
+        const operation = config.operations[plugName];
+        if (!operation) {
+          throw new Error(`Operation "${plugName}" not defined in program`);
         }
 
         const plugFn = getPlugFunction(plug);
@@ -69,7 +76,30 @@ export function createBlackbox(config: BlackboxConfig): {
         // If computedInput is provided (from invoke.input), use it instead of event
         const input = computedInput !== undefined ? computedInput : event;
 
-        return await Promise.resolve(plugFn(data, input, blackbox));
+        // v1.3: Validate input against operation contract
+        try {
+          validateSchema(input, operation.input, config.models || {}, `Operation "${plugName}" input`);
+        } catch (err) {
+          if (err instanceof ValidationError) {
+            throw err;
+          }
+          throw new Error(`Operation "${plugName}" input validation failed: ${(err as Error).message}`);
+        }
+
+        // Execute plug
+        const result = await Promise.resolve(plugFn(data, input, blackbox));
+
+        // v1.3: Validate output against operation contract
+        try {
+          validateSchema(result, operation.output, config.models || {}, `Operation "${plugName}" output`);
+        } catch (err) {
+          if (err instanceof ValidationError) {
+            throw err;
+          }
+          throw new Error(`Operation "${plugName}" output validation failed: ${(err as Error).message}`);
+        }
+
+        return result;
       }
 
       // Execute entry/exit plugs
@@ -189,6 +219,7 @@ export function createBlackbox(config: BlackboxConfig): {
       // Introspection API
       function createIntrospection(): Introspection {
         return {
+          // v1.0 methods
           allPaths(): string[][] {
             // DFS to find all possible paths
             const paths: string[][] = [];
@@ -229,8 +260,8 @@ export function createBlackbox(config: BlackboxConfig): {
             return paths;
           },
 
-          allActions(): Array<{ name: string; phase: string; label: string; params?: Record<string, string> }> {
-            const actions: Array<{ name: string; phase: string; label: string; params?: Record<string, string> }> = [];
+          allActions(): Array<{ name: string; phase: string; label: string; params?: DataSchema }> {
+            const actions: Array<{ name: string; phase: string; label: string; params?: DataSchema }> = [];
 
             for (const [phaseName, phase] of Object.entries(config.phases)) {
               const phaseActions = Object.keys(phase.on || {});
@@ -305,6 +336,29 @@ export function createBlackbox(config: BlackboxConfig): {
             }
 
             return true;
+          },
+
+          // v1.3 methods
+          getOperation(name: string) {
+            return config.operations[name];
+          },
+
+          getAllOperations() {
+            return { ...config.operations };
+          },
+
+          resolveModelRef(ref: string) {
+            return resolveModelRef(ref, config.models || {});
+          },
+
+          validatePlugs(plugsToValidate: Record<string, Plug>): ValidationResult {
+            return validatePlugsAgainstOps(plugsToValidate, config.operations);
+          },
+
+          resolveSpecRef(ref: string): string {
+            // For now, just return the ref as-is
+            // Future: actually resolve to spec file content
+            return ref;
           }
         };
       }
@@ -417,10 +471,6 @@ export function createBlackbox(config: BlackboxConfig): {
       // Force set the phase (hack for now - in real impl would need phase setter)
       // For now, just start fresh with the snapshot data
       return blackbox;
-    },
-
-    use(newPlugs: Record<string, Plug>): void {
-      Object.assign(plugs, newPlugs);
     }
   };
 }

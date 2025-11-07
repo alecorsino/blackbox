@@ -1,4 +1,4 @@
-// @blackbox/protocol v1.0.0
+// @blackbox/protocol v1.3.0
 // The runtime for API orchestration without the glue
 
 export { createBlackbox } from './runtime';
@@ -14,6 +14,7 @@ export {
   debounce,
   throttle
 } from './helpers';
+export { validateSchema, resolveModelRef, validatePlugs, ValidationError } from './validation';
 
 export type {
   Blackbox,
@@ -34,5 +35,10 @@ export type {
   PlugMetadata,
   HistoryEntry,
   Snapshot,
-  Introspection
+  Introspection,
+  // v1.3 types
+  OperationType,
+  OperationContract,
+  OperationMetadata,
+  ValidationResult
 } from './types';

@@ -1,19 +1,48 @@
-// shopping.blackbox.ts
-// A complete shopping journey orchestration
+// shopping.blackbox.ts - v1.3
+// A complete shopping journey orchestration - PURE PROTOCOL (no implementation)
 
-import { createBlackbox, mock, assign, type BlackboxConfig } from '@blackbox/protocol';
+import type { BlackboxConfig } from '@blackbox/protocol';
 
-const shoppingConfig: BlackboxConfig = {
+// v1.3: Program is PURE PROTOCOL - no plugs, no URLs, no implementation
+export const shoppingProgram: BlackboxConfig = {
   id: 'shopping-journey',
-  version: '1.0.0',
+  version: '1.3.0',
   initial: 'idle',
 
+  // Layer 1: Domain Types (static, reusable)
+  models: {
+    Product: {
+      id: { type: 'string', required: true },
+      name: { type: 'string', required: true },
+      price: { type: 'number', required: true }
+    },
+    CartItem: {
+      id: { type: 'string', required: true },
+      name: { type: 'string', required: true },
+      price: { type: 'number', required: true },
+      cartItemId: { type: 'string', required: true }
+    }
+  },
+
+  // Layer 2: Machine State (dynamic, can $ref models, can be anything typed)
   data: {
     query: { type: 'string', default: '' },
-    products: { type: 'array', default: [] },
-    cart: { type: 'array', default: [] },
+    products: {
+      type: 'array',
+      items: { $ref: '#/models/Product' },  // References model!
+      default: []
+    },
+    cart: {
+      type: 'array',
+      items: { $ref: '#/models/CartItem' },
+      default: []
+    },
     orderId: { type: 'string', default: '' },
-    userId: { type: 'string', required: true }
+    userId: { type: 'string', required: true },
+
+    // Free-form app state (not domain models, but still typed!)
+    showPromo: { type: 'boolean', default: false },
+    currentStep: { type: 'number', default: 1 }
   },
 
   phases: {
@@ -34,6 +63,9 @@ const shoppingConfig: BlackboxConfig = {
     searching: {
       invoke: {
         src: 'searchProducts',
+        input: (data, event) => ({
+          query: event.query
+        }),
         onDone: { target: 'viewingProducts', actions: 'storeProducts' },
         onError: { target: 'error', actions: 'logError' }
       },
@@ -77,6 +109,10 @@ const shoppingConfig: BlackboxConfig = {
     removingItem: {
       invoke: {
         src: 'removeFromCart',
+        input: (data, event) => ({
+          itemId: event.itemId,
+          cart: data.cart
+        }),
         onDone: { target: 'viewingCart', actions: 'removeItemFromCart' },
         onError: 'error'
       },
@@ -93,6 +129,10 @@ const shoppingConfig: BlackboxConfig = {
     paying: {
       invoke: {
         src: 'processPayment',
+        input: (data, event) => ({
+          cart: data.cart,
+          userId: data.userId
+        }),
         onDone: { target: 'completed', actions: 'storeOrderId' },
         onError: 'error'
       },
@@ -115,6 +155,7 @@ const shoppingConfig: BlackboxConfig = {
     }
   },
 
+  // Layer 3: User Actions (transient events)
   actions: {
     START: {
       label: 'Start shopping',
@@ -123,7 +164,9 @@ const shoppingConfig: BlackboxConfig = {
     SEARCH: {
       label: 'Search products',
       description: 'Search for products in the catalog',
-      params: { query: 'string' }
+      params: {
+        query: { type: 'string', minLength: 1 }
+      }
     },
     SEARCH_AGAIN: {
       label: 'Search again',
@@ -132,7 +175,9 @@ const shoppingConfig: BlackboxConfig = {
     ADD_TO_CART: {
       label: 'Add to cart',
       description: 'Add this product to your cart',
-      params: { productId: 'string' }
+      params: {
+        productId: { type: 'string' }
+      }
     },
     VIEW_CART: {
       label: 'View cart',
@@ -145,7 +190,9 @@ const shoppingConfig: BlackboxConfig = {
     REMOVE_ITEM: {
       label: 'Remove item',
       description: 'Remove an item from cart',
-      params: { itemId: 'string' }
+      params: {
+        itemId: { type: 'string' }
+      }
     },
     CHECKOUT: {
       label: 'Checkout',
@@ -169,64 +216,146 @@ const shoppingConfig: BlackboxConfig = {
     }
   },
 
-  plugs: {
-    // Mock API calls for demo
-    searchProducts: mock(
-      {
-        products: [
-          { id: '1', name: 'Laptop Pro', price: 1299 },
-          { id: '2', name: 'Wireless Mouse', price: 29 },
-          { id: '3', name: 'Mechanical Keyboard', price: 149 },
-          { id: '4', name: 'USB-C Hub', price: 79 }
-        ]
+  // v1.3: Operation Contracts (WHAT APIs this workflow needs)
+  operations: {
+    searchProducts: {
+      type: 'service',
+      description: 'Search product catalog by keyword',
+      input: {
+        query: { type: 'string', minLength: 1, maxLength: 100 }
       },
-      500
-    ),
-
-    addToCart: async (data: any, input: any) => {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      // input contains { productId, products } from invoke.input
-      const product = input.products.find((p: any) => p.id === input.productId);
-      if (!product) throw new Error('Product not found');
-      return { item: { ...product, cartItemId: `cart-${Date.now()}` } };
+      output: {
+        products: {
+          type: 'array',
+          items: { $ref: '#/models/Product' }
+        }
+      },
+      metadata: {
+        intent: 'product-search',
+        service: 'ProductService',
+        operation: 'search',
+        specRef: 'specs/shopping-api.yaml#/paths/~1products~1search/get'
+      }
     },
 
-    removeFromCart: async (ctx: any, event: any) => {
-      await new Promise(resolve => setTimeout(resolve, 300));
-      return { itemId: event.itemId };
+    addToCart: {
+      type: 'service',
+      description: 'Add product to shopping cart',
+      input: {
+        productId: { type: 'string' },
+        products: {
+          type: 'array',
+          items: { $ref: '#/models/Product' }
+        }
+      },
+      output: {
+        item: { $ref: '#/models/CartItem' }
+      },
+      metadata: {
+        intent: 'cart-add',
+        service: 'CartService',
+        operation: 'addItem'
+      }
     },
 
-    processPayment: mock(
-      { orderId: `ORDER-${Math.random().toString(36).substring(7).toUpperCase()}`, success: true },
-      1000
-    ),
-
-    // Actions (immutable data updates using assign)
-    storeProducts: assign((data, event) => ({
-      products: event.data.products
-    })),
-
-    addItemToCart: assign((data, event) => ({
-      cart: [...data.cart, event.data.item]
-    })),
-
-    removeItemFromCart: assign((data, event) => ({
-      cart: data.cart.filter((item: any) => item.cartItemId !== event.data.itemId)
-    })),
-
-    storeOrderId: assign((data, event) => ({
-      orderId: event.data.orderId
-    })),
-
-    logError: (ctx: any, event: any) => {
-      console.error('❌ Error:', event.error?.message || 'Unknown error');
+    removeFromCart: {
+      type: 'service',
+      description: 'Remove item from shopping cart',
+      input: {
+        itemId: { type: 'string' },
+        cart: {
+          type: 'array',
+          items: { $ref: '#/models/CartItem' }
+        }
+      },
+      output: {
+        itemId: { type: 'string' }
+      },
+      metadata: {
+        intent: 'cart-remove',
+        service: 'CartService',
+        operation: 'removeItem'
+      }
     },
 
-    // Guards
-    hasProductId: (ctx: any, event: any) => {
-      return !!event.productId;
+    processPayment: {
+      type: 'service',
+      description: 'Process payment for cart items',
+      input: {
+        cart: {
+          type: 'array',
+          items: { $ref: '#/models/CartItem' }
+        },
+        userId: { type: 'string' }
+      },
+      output: {
+        orderId: { type: 'string' },
+        success: { type: 'boolean' }
+      },
+      metadata: {
+        intent: 'payment-process',
+        service: 'PaymentService',
+        operation: 'process',
+        specRef: 'specs/payment-api.yaml#/paths/~1payment/post'
+      }
+    },
+
+    storeProducts: {
+      type: 'action',
+      description: 'Store search results in machine state',
+      input: {
+        event: { type: 'object' }  // DONE event with data
+      },
+      output: {}  // Partial state updates (dynamic)
+    },
+
+    addItemToCart: {
+      type: 'action',
+      description: 'Add cart item to state',
+      input: {
+        event: { type: 'object' }
+      },
+      output: {}  // Partial state updates (dynamic)
+    },
+
+    removeItemFromCart: {
+      type: 'action',
+      description: 'Remove item from cart in state',
+      input: {
+        event: { type: 'object' }
+      },
+      output: {}  // Partial state updates (dynamic)
+    },
+
+    storeOrderId: {
+      type: 'action',
+      description: 'Store order ID in state',
+      input: {
+        event: { type: 'object' }
+      },
+      output: {}  // Partial state updates (dynamic)
+    },
+
+    logError: {
+      type: 'action',
+      description: 'Log error to console',
+      input: {
+        event: { type: 'object' }
+      },
+      output: {}  // No state updates
+    },
+
+    hasProductId: {
+      type: 'guard',
+      description: 'Check if event has productId',
+      input: {
+        event: { type: 'object' }
+      },
+      output: {}  // Guards return boolean (primitive, not an object schema)
     }
   }
+
+  // NO PLUGS IN PROGRAM! Provided at runtime via session.use()
 };
 
-export default createBlackbox(shoppingConfig);
+export default shoppingProgram;

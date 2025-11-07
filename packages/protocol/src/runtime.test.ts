@@ -33,12 +33,17 @@ describe('Blackbox Protocol - Behavioral Specifications', () => {
         actions: {
           ADD_TO_CART: { label: 'Add to cart' }
         },
-        plugs: {
-          canAdd: guardSpy
+        operations: {
+          canAdd: {
+            type: 'guard',
+            input: { event: { type: 'object' } },
+            output: {}
+          }
         }
       };
 
       const blackbox = createBlackbox(config).start();
+      blackbox.use({ canAdd: guardSpy });
       blackbox.do('ADD_TO_CART', { productId: '1', quantity: 2 });
 
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -85,12 +90,23 @@ describe('Blackbox Protocol - Behavioral Specifications', () => {
         actions: {
           SEARCH: { label: 'Search' }
         },
-        plugs: {
-          searchAPI: serviceSpy
+        operations: {
+          searchAPI: {
+            type: 'service',
+            input: {
+              query: { type: 'string' },
+              userId: { type: 'string' },
+              filters: { type: 'object' }
+            },
+            output: {
+              results: { type: 'array' }
+            }
+          }
         }
       };
 
       const blackbox = createBlackbox(config).start();
+      blackbox.use({ searchAPI: serviceSpy });
       blackbox.do('SEARCH', { query: 'laptop' });
 
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -123,25 +139,39 @@ describe('Blackbox Protocol - Behavioral Specifications', () => {
         actions: {
           CHECKOUT: { label: 'Checkout' }
         },
-        plugs: {
-          calculateTotal: assign((data) => {
-            executionOrder.push('calculateTotal');
-            return {
-              total: data.cart.reduce((sum: number, item: any) => sum + item.price, 0)
-            };
-          }),
-          applyTax: assign((data) => {
-            executionOrder.push('applyTax');
-            // Should see the total from calculateTotal
-            expect(data.total).toBe(100);
-            return {
-              total: data.total * 1.08
-            };
-          })
+        operations: {
+          calculateTotal: {
+            type: 'action',
+            input: { event: { type: 'object' } },
+            output: {}
+          },
+          applyTax: {
+            type: 'action',
+            input: { event: { type: 'object' } },
+            output: {}
+          }
         }
       };
 
+      const plugs = {
+        calculateTotal: assign((data) => {
+          executionOrder.push('calculateTotal');
+          return {
+            total: data.cart.reduce((sum: number, item: any) => sum + item.price, 0)
+          };
+        }),
+        applyTax: assign((data) => {
+          executionOrder.push('applyTax');
+          // Should see the total from calculateTotal
+          expect(data.total).toBe(100);
+          return {
+            total: data.total * 1.08
+          };
+        })
+      };
+
       const blackbox = createBlackbox(config).start();
+      blackbox.use(plugs);
       blackbox.do('CHECKOUT');
 
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -171,17 +201,33 @@ describe('Blackbox Protocol - Behavioral Specifications', () => {
         actions: {
           SEARCH: { label: 'Search' }
         },
-        plugs: {
-          saveScroll: () => {
-            executionOrder.push('exit:saveScroll');
+        operations: {
+          saveScroll: {
+            type: 'action',
+            input: { event: { type: 'object' } },
+            output: {}
           },
-          startLoading: () => {
-            executionOrder.push('entry:startLoading');
+          startLoading: {
+            type: 'action',
+            input: { event: { type: 'object' } },
+            output: {}
           }
         }
       };
 
+      const plugs = {
+        saveScroll: () => {
+          executionOrder.push('exit:saveScroll');
+          return {};
+        },
+        startLoading: () => {
+          executionOrder.push('entry:startLoading');
+          return {};
+        }
+      };
+
       const blackbox = createBlackbox(config).start();
+      blackbox.use(plugs);
       blackbox.do('SEARCH');
 
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -214,14 +260,23 @@ describe('Blackbox Protocol - Behavioral Specifications', () => {
         actions: {
           ADD: { label: 'Add' }
         },
-        plugs: {
-          addItem: assign((data, event) => ({
-            cart: [...data.cart, event.item]
-          }))
+        operations: {
+          addItem: {
+            type: 'action',
+            input: { event: { type: 'object' } },
+            output: {}
+          }
         }
       };
 
+      const plugs = {
+        addItem: assign((data, event) => ({
+          cart: [...data.cart, event.item]
+        }))
+      };
+
       const blackbox = createBlackbox(config).start();
+      blackbox.use(plugs);
       const originalData = blackbox.where().data;
       const originalCart = originalData.cart;
 
@@ -244,6 +299,9 @@ describe('Blackbox Protocol - Behavioral Specifications', () => {
         id: 'test',
         version: '1.0.0',
         phases: {
+          idle: {
+            on: { SEARCH: 'searching' }
+          },
           searching: {
             invoke: {
               src: 'searchAPI',
@@ -255,20 +313,40 @@ describe('Blackbox Protocol - Behavioral Specifications', () => {
           },
           results: { type: 'final' }
         },
-        actions: {},
-        plugs: {
-          searchAPI: async () => {
-            return { products: [{ id: '1', name: 'Laptop' }] };
+        actions: {
+          SEARCH: { label: 'Search' }
+        },
+        operations: {
+          searchAPI: {
+            type: 'service',
+            input: {},
+            output: {
+              products: { type: 'array' }
+            }
           },
-          storeResults: (data, event) => {
-            actionSpy(event);
-            expect(event.type).toBe('DONE');
-            expect(event.data.products).toEqual([{ id: '1', name: 'Laptop' }]);
+          storeResults: {
+            type: 'action',
+            input: { event: { type: 'object' } },
+            output: {}
           }
         }
       };
 
+      const plugs = {
+        searchAPI: async () => {
+          return { products: [{ id: '1', name: 'Laptop' }] };
+        },
+        storeResults: (data: any, event: any) => {
+          actionSpy(event);
+          expect(event.type).toBe('DONE');
+          expect(event.data.products).toEqual([{ id: '1', name: 'Laptop' }]);
+          return {};
+        }
+      };
+
       const blackbox = createBlackbox(config).start();
+      blackbox.use(plugs);
+      blackbox.do('SEARCH');
 
       await new Promise(resolve => setTimeout(resolve, 50));
 
@@ -305,13 +383,27 @@ describe('Blackbox Protocol - Behavioral Specifications', () => {
         actions: {
           SUBMIT: { label: 'Submit' }
         },
-        plugs: {
-          isVIP: isVIPSpy,
-          isLargeAmount: isLargeSpy
+        operations: {
+          isVIP: {
+            type: 'guard',
+            input: { event: { type: 'object' } },
+            output: {}
+          },
+          isLargeAmount: {
+            type: 'guard',
+            input: { event: { type: 'object' } },
+            output: {}
+          }
         }
       };
 
+      const plugs = {
+        isVIP: isVIPSpy,
+        isLargeAmount: isLargeSpy
+      };
+
       const blackbox = createBlackbox(config).start();
+      blackbox.use(plugs);
       blackbox.do('SUBMIT');
 
       await new Promise(resolve => setTimeout(resolve, 10));
@@ -330,6 +422,9 @@ describe('Blackbox Protocol - Behavioral Specifications', () => {
         id: 'test',
         version: '1.0.0',
         phases: {
+          checkout: {
+            on: { PAY: 'paying' }
+          },
           paying: {
             invoke: {
               src: 'processPayment',
@@ -343,20 +438,38 @@ describe('Blackbox Protocol - Behavioral Specifications', () => {
           completed: { type: 'final' },
           failed: { type: 'final' }
         },
-        actions: {},
-        plugs: {
-          processPayment: async () => {
-            throw new Error('Payment declined');
+        actions: {
+          PAY: { label: 'Pay' }
+        },
+        operations: {
+          processPayment: {
+            type: 'service',
+            input: {},
+            output: {}
           },
-          logError: (data, event) => {
-            errorHandlerSpy(event);
-            expect(event.type).toBe('ERROR');
-            expect(event.error.message).toBe('Payment declined');
+          logError: {
+            type: 'action',
+            input: { event: { type: 'object' } },
+            output: {}
           }
         }
       };
 
+      const plugs = {
+        processPayment: async () => {
+          throw new Error('Payment declined');
+        },
+        logError: (data: any, event: any) => {
+          errorHandlerSpy(event);
+          expect(event.type).toBe('ERROR');
+          expect(event.error.message).toBe('Payment declined');
+          return {};
+        }
+      };
+
       const blackbox = createBlackbox(config).start();
+      blackbox.use(plugs);
+      blackbox.do('PAY');
 
       await new Promise(resolve => setTimeout(resolve, 50));
 
@@ -381,7 +494,7 @@ describe('Blackbox Protocol - Behavioral Specifications', () => {
           ADD: { label: 'Add' },
           CHECKOUT: { label: 'Checkout' }
         },
-        plugs: {}
+        operations: {}
       };
 
       const blackbox = createBlackbox(config).start();
@@ -424,7 +537,7 @@ describe('Blackbox Protocol - Behavioral Specifications', () => {
           START: { label: 'Start' },
           STOP: { label: 'Stop' }
         },
-        plugs: {}
+        operations: {}
       };
 
       const blackbox = createBlackbox(config).start();
@@ -462,14 +575,23 @@ describe('Blackbox Protocol - Behavioral Specifications', () => {
         actions: {
           INC: { label: 'Increment' }
         },
-        plugs: {
-          increment: assign((data) => ({
-            count: data.count + 1
-          }))
+        operations: {
+          increment: {
+            type: 'action',
+            input: { event: { type: 'object' } },
+            output: {}
+          }
         }
       };
 
+      const plugs = {
+        increment: assign((data) => ({
+          count: data.count + 1
+        }))
+      };
+
       const blackbox = createBlackbox(config).start();
+      blackbox.use(plugs);
       blackbox.do('INC');
       blackbox.do('INC');
 
