@@ -185,7 +185,14 @@ models: {
 
 **Note**: This affects `models`, `operations.input`, `operations.output` schemas
 
-**Status**: 🔴 Not Started
+**Changes made**:
+- Removed `required?: string[]` from DataSchema interface
+- Updated all examples in BLACKBOX_PROTOCOL_V2.md to use inline `required: true`
+- Updated JSON Schema definition to remove required array property
+- Updated TypeScript definitions in Appendix A
+- Updated shopping-checkout.program.json example to use inline required
+
+**Status**: 🟢 Completed
 
 ---
 

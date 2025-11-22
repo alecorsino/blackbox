@@ -309,21 +309,20 @@ operations: {
     input: {
       type: 'object',
       properties: {
-        query: { type: 'string', minLength: 1 },
-        filters: { type: 'object' }
-      },
-      required: ['query']
+        query: { type: 'string', minLength: 1, required: true },
+        filters: { type: 'object' }  // Optional
+      }
     },
     output: {
       type: 'object',
       properties: {
         products: {
           type: 'array',
-          items: { $ref: '#/models/Product' }
+          items: { $ref: '#/models/Product' },
+          required: true
         },
-        totalCount: { type: 'number' }
-      },
-      required: ['products']
+        totalCount: { type: 'number' }  // Optional
+      }
     }
   }
 }
@@ -656,7 +655,7 @@ interface DataSchema {
 
   // For objects
   properties?: Record<string, DataSchemaField>;
-  required?: string[];  // Array of required property names
+  // Note: required is now inline on each DataSchemaField, not a separate array
 
   // For arrays
   items?: DataSchemaField;
@@ -677,12 +676,11 @@ models: {
   Product: {
     type: 'object',
     properties: {
-      id: { type: 'string' },
-      name: { type: 'string' },
-      price: { type: 'number', min: 0 },
-      tags: { type: 'array', items: { type: 'string' } }
-    },
-    required: ['id', 'name', 'price']
+      id: { type: 'string', required: true },
+      name: { type: 'string', required: true },
+      price: { type: 'number', min: 0, required: true },
+      tags: { type: 'array', items: { type: 'string' } }  // Optional by default
+    }
   }
 }
 ```
@@ -849,12 +847,11 @@ models: {
   User: {
     type: 'object',
     properties: {
-      id: { type: 'string' },
-      email: { type: 'string', pattern: '^[^@]+@[^@]+\\.[^@]+$' },
-      name: { type: 'string' },
-      verified: { type: 'boolean' }
-    },
-    required: ['id', 'email']
+      id: { type: 'string', required: true },
+      email: { type: 'string', pattern: '^[^@]+@[^@]+\\.[^@]+$', required: true },
+      name: { type: 'string' },  // Optional
+      verified: { type: 'boolean' }  // Optional
+    }
   }
 }
 ```
@@ -866,12 +863,11 @@ models: {
   Address: {
     type: 'object',
     properties: {
-      street: { type: 'string' },
-      city: { type: 'string' },
-      zipCode: { type: 'string' },
-      country: { type: 'string' }
-    },
-    required: ['street', 'city', 'zipCode']
+      street: { type: 'string', required: true },
+      city: { type: 'string', required: true },
+      zipCode: { type: 'string', required: true },
+      country: { type: 'string' }  // Optional
+    }
   },
 
   User: {
@@ -879,8 +875,8 @@ models: {
     properties: {
       id: { type: 'string' },
       name: { type: 'string' },
-      shippingAddress: { $ref: '#/models/Address' },  // Reference
-      billingAddress: { $ref: '#/models/Address' }
+      shippingAddress: { $ref: '#/models/Address' },  // Reference, optional
+      billingAddress: { $ref: '#/models/Address' }  // Reference, optional
     }
   }
 }
@@ -1245,10 +1241,6 @@ The formal JSON Schema definition for Blackbox Protocol v2.0:
             "$ref": "#/definitions/DataSchemaField"
           }
         },
-        "required": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
         "items": {
           "$ref": "#/definitions/DataSchemaField"
         },
@@ -1434,7 +1426,6 @@ export interface BlackboxProgram {
 export interface DataSchema {
   type: 'object' | 'array' | 'string' | 'number' | 'boolean';
   properties?: Record<string, DataSchemaField>;
-  required?: string[];
   items?: DataSchemaField;
   minLength?: number;
   maxLength?: number;
