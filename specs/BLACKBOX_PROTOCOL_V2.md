@@ -194,7 +194,6 @@ data: {
 interface EventDefinition {
   label: string;                            // Human-readable name (REQUIRED)
   description?: string;                     // Detailed explanation
-  icon?: string;                            // UI hint (icon name)
   params?: Record<string, DataSchemaField>; // Parameter schema for validation
 }
 ```
@@ -206,7 +205,6 @@ events: {
   SEARCH: {
     label: "Search products",
     description: "Search the product catalog by keyword",
-    icon: "magnifying-glass",
     params: {
       query: {
         type: 'string',
@@ -226,7 +224,6 @@ events: {
 
   ADD_TO_CART: {
     label: "Add to cart",
-    icon: "plus-circle",
     params: {
       productId: { type: 'string', required: true },
       quantity: { type: 'number', default: 1, min: 1, max: 99 }
@@ -246,7 +243,7 @@ session.can() // → ['SEARCH', 'ADD_TO_CART', 'CHECKOUT']
 // Can return full metadata for UI rendering
 session.can({ withMetadata: true })
 // → [
-//     { event: 'SEARCH', label: 'Search products', icon: 'magnifying-glass', params: {...} },
+//     { event: 'SEARCH', label: 'Search products', params: {...} },
 //     ...
 //   ]
 ```
@@ -282,7 +279,7 @@ phases: {
 Events define:
 - ✅ **What actions exist** (discoverable via `can()`)
 - ✅ **What inputs they need** (params schema)
-- ✅ **How to present them** (label, icon, description)
+- ✅ **How to present them** (label, description)
 - ✅ **When they're available** (based on current phase)
 
 This enables self-documenting, auto-generating UIs with zero hardcoding.
@@ -1154,531 +1151,18 @@ data: {
 
 ## 11. Complete Example
 
-This example demonstrates **every feature** of the protocol in a realistic shopping checkout workflow.
+A comprehensive example demonstrating **every feature** of the protocol is available in a separate file for easier maintenance and updates:
 
-```typescript
-{
-  // === IDENTITY ===
-  "id": "shopping-checkout",
-  "version": "2.0.0",
-  "initial": "browsing",
+**→ [examples/shopping-checkout.program.json](examples/shopping-checkout.program.json)**
 
-  // === DOMAIN TYPES ===
-  "models": {
-    "Product": {
-      "type": "object",
-      "properties": {
-        "id": { "type": "string" },
-        "name": { "type": "string" },
-        "price": { "type": "number", "min": 0 },
-        "inStock": { "type": "boolean" },
-        "category": { "type": "string" }
-      },
-      "required": ["id", "name", "price"]
-    },
+This shopping checkout workflow demonstrates:
+- **4 Models**: Product, CartItem, Address, PaymentMethod
+- **9 Data fields**: Session state management
+- **9 Events**: User-triggerable actions with parameter validation
+- **14 Operations**: Service calls, actions, and guards
+- **13 Phases**: Complete state machine with error handling and retries
 
-    "CartItem": {
-      "type": "object",
-      "properties": {
-        "productId": { "type": "string" },
-        "quantity": { "type": "number", "min": 1 },
-        "addedAt": { "type": "string" }
-      },
-      "required": ["productId", "quantity"]
-    },
-
-    "Address": {
-      "type": "object",
-      "properties": {
-        "street": { "type": "string" },
-        "city": { "type": "string" },
-        "zipCode": { "type": "string" },
-        "country": { "type": "string" }
-      },
-      "required": ["street", "city", "zipCode"]
-    },
-
-    "PaymentMethod": {
-      "type": "object",
-      "properties": {
-        "type": { "type": "string" },
-        "last4": { "type": "string" }
-      },
-      "required": ["type"]
-    }
-  },
-
-  // === SESSION STATE ===
-  "data": {
-    "products": {
-      "type": "array",
-      "items": { "$ref": "#/models/Product" },
-      "default": []
-    },
-
-    "cart": {
-      "type": "array",
-      "items": { "$ref": "#/models/CartItem" },
-      "default": []
-    },
-
-    "query": {
-      "type": "string",
-      "default": "",
-      "maxLength": 100
-    },
-
-    "total": {
-      "type": "number",
-      "default": 0,
-      "min": 0
-    },
-
-    "discount": {
-      "type": "number",
-      "default": 0,
-      "min": 0,
-      "max": 100
-    },
-
-    "shippingAddress": {
-      "$ref": "#/models/Address",
-      "required": false
-    },
-
-    "paymentMethod": {
-      "$ref": "#/models/PaymentMethod",
-      "required": false
-    },
-
-    "orderId": {
-      "type": "string",
-      "required": false
-    },
-
-    "retryCount": {
-      "type": "number",
-      "default": 0,
-      "min": 0
-    }
-  },
-
-  // === USER EVENTS ===
-  "events": {
-    "SEARCH": {
-      "label": "Search products",
-      "description": "Search the product catalog by keyword",
-      "icon": "magnifying-glass",
-      "params": {
-        "query": {
-          "type": "string",
-          "required": true,
-          "minLength": 1,
-          "maxLength": 100
-        }
-      }
-    },
-
-    "ADD_TO_CART": {
-      "label": "Add to cart",
-      "icon": "plus-circle",
-      "params": {
-        "productId": { "type": "string", "required": true },
-        "quantity": { "type": "number", "default": 1, "min": 1, "max": 99 }
-      }
-    },
-
-    "REMOVE_FROM_CART": {
-      "label": "Remove from cart",
-      "icon": "minus-circle",
-      "params": {
-        "productId": { "type": "string", "required": true }
-      }
-    },
-
-    "CHECKOUT": {
-      "label": "Proceed to checkout",
-      "icon": "arrow-right"
-    },
-
-    "SET_SHIPPING": {
-      "label": "Set shipping address",
-      "params": {
-        "address": { "$ref": "#/models/Address", "required": true }
-      }
-    },
-
-    "SET_PAYMENT": {
-      "label": "Set payment method",
-      "params": {
-        "method": { "$ref": "#/models/PaymentMethod", "required": true }
-      }
-    },
-
-    "PAY": {
-      "label": "Complete payment",
-      "icon": "credit-card"
-    },
-
-    "RETRY": {
-      "label": "Retry",
-      "icon": "refresh"
-    },
-
-    "CANCEL": {
-      "label": "Cancel",
-      "icon": "x-circle"
-    }
-  },
-
-  // === OPERATIONS (PROTOCOL CONTRACTS) ===
-  "operations": {
-    // --- SERVICE OPERATIONS (Async) ---
-
-    "searchProducts": {
-      "type": "service",
-      "description": "Search product catalog",
-      "input": {
-        "type": "object",
-        "properties": {
-          "query": { "type": "string" }
-        },
-        "required": ["query"]
-      },
-      "output": {
-        "type": "object",
-        "properties": {
-          "products": {
-            "type": "array",
-            "items": { "$ref": "#/models/Product" }
-          }
-        },
-        "required": ["products"]
-      },
-      "metadata": {
-        "intent": "product-search",
-        "timeout": 5000,
-        "cacheable": true
-      }
-    },
-
-    "addToCartAPI": {
-      "type": "service",
-      "description": "Add item to cart on backend",
-      "input": {
-        "type": "object",
-        "properties": {
-          "productId": { "type": "string" },
-          "quantity": { "type": "number" }
-        },
-        "required": ["productId", "quantity"]
-      },
-      "output": {
-        "type": "object",
-        "properties": {
-          "cartItem": { "$ref": "#/models/CartItem" },
-          "cartTotal": { "type": "number" }
-        }
-      }
-    },
-
-    "processPayment": {
-      "type": "service",
-      "description": "Process payment transaction",
-      "input": {
-        "type": "object",
-        "properties": {
-          "orderId": { "type": "string" },
-          "amount": { "type": "number" },
-          "paymentMethod": { "$ref": "#/models/PaymentMethod" }
-        },
-        "required": ["orderId", "amount", "paymentMethod"]
-      },
-      "output": {
-        "type": "object",
-        "properties": {
-          "success": { "type": "boolean" },
-          "transactionId": { "type": "string" }
-        },
-        "required": ["success"]
-      },
-      "metadata": {
-        "timeout": 30000
-      }
-    },
-
-    // --- ACTION OPERATIONS (Sync State Updates) ---
-
-    "storeSearchResults": {
-      "type": "action",
-      "description": "Store search results in state",
-      "input": {
-        "type": "object",
-        "properties": {
-          "event": { "type": "object" }
-        }
-      },
-      "output": {
-        "type": "object",
-        "properties": {
-          "products": { "type": "array" },
-          "query": { "type": "string" }
-        }
-      }
-    },
-
-    "addItemToCart": {
-      "type": "action",
-      "description": "Add item to local cart state",
-      "input": { "type": "object" },
-      "output": { "type": "object" }
-    },
-
-    "calculateTotal": {
-      "type": "action",
-      "description": "Calculate cart total with discounts",
-      "input": { "type": "object" },
-      "output": {
-        "type": "object",
-        "properties": {
-          "total": { "type": "number" }
-        }
-      }
-    },
-
-    "storeShippingAddress": {
-      "type": "action",
-      "input": { "type": "object" },
-      "output": { "type": "object" }
-    },
-
-    "storePaymentMethod": {
-      "type": "action",
-      "input": { "type": "object" },
-      "output": { "type": "object" }
-    },
-
-    "incrementRetry": {
-      "type": "action",
-      "input": { "type": "object" },
-      "output": {
-        "type": "object",
-        "properties": {
-          "retryCount": { "type": "number" }
-        }
-      }
-    },
-
-    "logError": {
-      "type": "action",
-      "description": "Log error for debugging",
-      "input": { "type": "object" },
-      "output": { "type": "object" }
-    },
-
-    // --- GUARD OPERATIONS (Boolean Conditions) ---
-
-    "hasQuery": {
-      "type": "guard",
-      "description": "Check if search query is provided",
-      "input": { "type": "object" },
-      "output": { "type": "boolean" }
-    },
-
-    "hasCartItems": {
-      "type": "guard",
-      "description": "Check if cart has items",
-      "input": { "type": "object" },
-      "output": { "type": "boolean" }
-    },
-
-    "canRetry": {
-      "type": "guard",
-      "description": "Check if retry limit not exceeded",
-      "input": { "type": "object" },
-      "output": { "type": "boolean" }
-    }
-  },
-
-  // === STATE MACHINE ===
-  "phases": {
-    // --- Browsing ---
-    "browsing": {
-      "tags": ["interactive"],
-      "on": {
-        "SEARCH": {
-          "target": "searching",
-          "cond": "hasQuery"
-        },
-        "CHECKOUT": {
-          "target": "reviewingCart",
-          "cond": "hasCartItems"
-        }
-      }
-    },
-
-    // --- Searching ---
-    "searching": {
-      "tags": ["loading"],
-      "invoke": {
-        "src": "searchProducts",
-        "input": "(data, event) => ({ query: event.query })",
-        "onDone": {
-          "target": "searchResults",
-          "actions": "storeSearchResults"
-        },
-        "onError": {
-          "target": "searchError",
-          "actions": "logError"
-        }
-      }
-    },
-
-    "searchResults": {
-      "tags": ["interactive"],
-      "on": {
-        "ADD_TO_CART": "addingToCart",
-        "SEARCH": {
-          "target": "searching",
-          "cond": "hasQuery"
-        },
-        "CHECKOUT": {
-          "target": "reviewingCart",
-          "cond": "hasCartItems"
-        }
-      }
-    },
-
-    "searchError": {
-      "tags": ["error"],
-      "on": {
-        "RETRY": "searching",
-        "CANCEL": "browsing"
-      }
-    },
-
-    // --- Cart Management ---
-    "addingToCart": {
-      "tags": ["loading"],
-      "invoke": {
-        "src": "addToCartAPI",
-        "input": "(data, event) => ({ productId: event.productId, quantity: event.quantity || 1 })",
-        "onDone": {
-          "target": "searchResults",
-          "actions": ["addItemToCart", "calculateTotal"]
-        },
-        "onError": {
-          "target": "searchResults",
-          "actions": "logError"
-        }
-      }
-    },
-
-    "reviewingCart": {
-      "tags": ["interactive"],
-      "entry": "calculateTotal",
-      "on": {
-        "REMOVE_FROM_CART": "removingFromCart",
-        "CHECKOUT": {
-          "target": "enteringShipping",
-          "cond": "hasCartItems"
-        },
-        "CANCEL": "browsing"
-      }
-    },
-
-    "removingFromCart": {
-      "tags": ["loading"],
-      "on": {
-        "CANCEL": "reviewingCart"
-      }
-    },
-
-    // --- Checkout Flow ---
-    "enteringShipping": {
-      "tags": ["interactive"],
-      "on": {
-        "SET_SHIPPING": {
-          "target": "enteringPayment",
-          "actions": "storeShippingAddress"
-        },
-        "CANCEL": "reviewingCart"
-      }
-    },
-
-    "enteringPayment": {
-      "tags": ["interactive"],
-      "on": {
-        "SET_PAYMENT": {
-          "target": "confirmingOrder",
-          "actions": "storePaymentMethod"
-        },
-        "CANCEL": "enteringShipping"
-      }
-    },
-
-    "confirmingOrder": {
-      "tags": ["interactive"],
-      "on": {
-        "PAY": "processingPayment",
-        "CANCEL": "reviewingCart"
-      }
-    },
-
-    // --- Payment Processing ---
-    "processingPayment": {
-      "tags": ["loading"],
-      "invoke": {
-        "src": "processPayment",
-        "input": "(data) => ({ orderId: data.orderId, amount: data.total, paymentMethod: data.paymentMethod })",
-        "onDone": [
-          {
-            "target": "paymentCompleted",
-            "cond": "(data, event) => event.data.success === true"
-          },
-          {
-            "target": "paymentFailed",
-            "actions": "logError"
-          }
-        ],
-        "onError": {
-          "target": "paymentFailed",
-          "actions": ["logError", "incrementRetry"]
-        }
-      }
-    },
-
-    "paymentFailed": {
-      "tags": ["error"],
-      "on": {
-        "RETRY": [
-          {
-            "target": "processingPayment",
-            "cond": "canRetry"
-          },
-          {
-            "target": "maxRetriesExceeded"
-          }
-        ],
-        "CANCEL": "reviewingCart"
-      }
-    },
-
-    "maxRetriesExceeded": {
-      "tags": ["error"],
-      "on": {
-        "CANCEL": "reviewingCart"
-      }
-    },
-
-    // --- Final State ---
-    "paymentCompleted": {
-      "type": "final",
-      "tags": ["success"]
-    }
-  }
-}
-```
+The example is kept synchronized with protocol changes and serves as a reference implementation.
 
 ---
 
@@ -1810,7 +1294,6 @@ The formal JSON Schema definition for Blackbox Protocol v2.0:
       "properties": {
         "label": { "type": "string" },
         "description": { "type": "string" },
-        "icon": { "type": "string" },
         "params": {
           "type": "object",
           "additionalProperties": {
@@ -1977,7 +1460,6 @@ export interface DataSchemaField {
 export interface EventDefinition {
   label: string;
   description?: string;
-  icon?: string;
   params?: Record<string, DataSchemaField>;
 }
 

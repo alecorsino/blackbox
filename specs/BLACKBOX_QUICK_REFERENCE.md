@@ -223,7 +223,6 @@ Use this to ensure you're using all available features:
 - [ ] `actions` - Event metadata
 - [ ] `actions[name].label` - Display name
 - [ ] `actions[name].description` - Help text
-- [ ] `actions[name].icon` - UI hint
 - [ ] `actions[name].params` - Parameter schema
 - [ ] `params[field].$ref` - Reference model in params
 

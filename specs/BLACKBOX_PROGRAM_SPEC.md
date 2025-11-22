@@ -161,7 +161,6 @@ interface ActionMeta {
   label: string;                           // Human-readable name
   description?: string;                    // Detailed explanation
   params?: Record<string, DataSchemaField>; // Parameter schema
-  icon?: string;                           // UI hint (icon name)
 }
 ```
 
@@ -494,7 +493,6 @@ This example demonstrates **every single property** available in the protocol.
     "SEARCH": {
       "label": "Search products",
       "description": "Search the product catalog by keyword",
-      "icon": "magnifying-glass",
       "params": {
         "query": {
           "type": "string",
@@ -514,7 +512,6 @@ This example demonstrates **every single property** available in the protocol.
     
     "VIEW_PRODUCT": {
       "label": "View product details",
-      "icon": "eye",
       "params": {
         "productId": {
           "type": "string",
@@ -526,7 +523,6 @@ This example demonstrates **every single property** available in the protocol.
     "ADD_TO_CART": {
       "label": "Add to cart",
       "description": "Add one or more products to your shopping cart",
-      "icon": "plus-circle",
       "params": {
         "productId": {
           "type": "string",
@@ -543,7 +539,6 @@ This example demonstrates **every single property** available in the protocol.
     
     "REMOVE_FROM_CART": {
       "label": "Remove from cart",
-      "icon": "minus-circle",
       "params": {
         "productId": {
           "type": "string",
@@ -570,7 +565,6 @@ This example demonstrates **every single property** available in the protocol.
     
     "APPLY_COUPON": {
       "label": "Apply discount coupon",
-      "icon": "tag",
       "params": {
         "code": {
           "type": "string",
@@ -581,8 +575,7 @@ This example demonstrates **every single property** available in the protocol.
     },
     
     "CHECKOUT": {
-      "label": "Proceed to checkout",
-      "icon": "arrow-right"
+      "label": "Proceed to checkout"
     },
     
     "SET_SHIPPING": {
@@ -606,23 +599,19 @@ This example demonstrates **every single property** available in the protocol.
     },
     
     "PAY": {
-      "label": "Complete payment",
-      "icon": "credit-card"
+      "label": "Complete payment"
     },
     
     "RETRY": {
-      "label": "Retry",
-      "icon": "refresh"
+      "label": "Retry"
     },
     
     "CANCEL": {
-      "label": "Cancel order",
-      "icon": "x-circle"
+      "label": "Cancel order"
     },
     
     "CONTINUE_SHOPPING": {
-      "label": "Continue shopping",
-      "icon": "shopping-bag"
+      "label": "Continue shopping"
     }
   },
 

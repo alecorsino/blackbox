@@ -18,7 +18,7 @@ This document captures design questions and proposed changes for the Blackbox Pr
 - All examples showing events
 - JSON Schema definition
 
-**Status**: 🔴 Not Started
+**Status**: 🟢 Completed
 
 ---
 
@@ -204,7 +204,7 @@ models: {
 - Replace section 11 in spec with link to the example file
 - Keep example up to date with protocol changes separately
 
-**Status**: 🔴 Not Started
+**Status**: 🟢 Completed
 
 ---
 
