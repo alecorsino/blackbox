@@ -1,6 +1,9 @@
 # Blackbox Program Specification v1.3
 ## Complete Protocol Reference
 
+> ⚠️ **LEGACY SPECIFICATION**: This is the v1.3 specification, preserved for migration reference.
+> **For the current specification, see [BLACKBOX_PROTOCOL_V2.md](BLACKBOX_PROTOCOL_V2.md)**
+
 > **The program is the protocol.** It declares *what* the workflow needs, not *how* it's implemented.
 
 ---

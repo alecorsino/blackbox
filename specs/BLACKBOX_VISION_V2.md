@@ -459,7 +459,7 @@ We'll know we succeeded when:
 ## 🌍 The Bigger Vision
 
 ### Phase 1: Protocol (✅ Done)
-- Spec v1.3
+- Spec v2.0 (evolved from v1.3)
 - Reference runtime
 - Proof of concept
 

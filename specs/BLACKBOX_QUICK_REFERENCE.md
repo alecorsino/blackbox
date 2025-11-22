@@ -1,4 +1,4 @@
-# Blackbox Program Protocol - Quick Reference
+# Blackbox Program Protocol v2.0 - Quick Reference
 
 ## The 30-Second Overview
 
@@ -20,7 +20,7 @@ A Blackbox program has **4 required parts** and **4 optional parts**:
   initial: "startPhase",          // Starting phase (or use first)
   models: { ... },                // Domain types (Product, User, etc.)
   data: { ... },                  // Machine state schema
-  actions: { ... }                // Event metadata for discovery
+  events: { ... }                 // Event metadata for discovery
 }
 ```
 
@@ -219,11 +219,11 @@ Use this to ensure you're using all available features:
 - [ ] `data[field].required` - Required field
 - [ ] Validation: min/max, minLength/maxLength, pattern
 
-### User Actions
-- [ ] `actions` - Event metadata
-- [ ] `actions[name].label` - Display name
-- [ ] `actions[name].description` - Help text
-- [ ] `actions[name].params` - Parameter schema
+### User Events
+- [ ] `events` - Event metadata
+- [ ] `events[name].label` - Display name
+- [ ] `events[name].description` - Help text
+- [ ] `events[name].params` - Parameter schema
 - [ ] `params[field].$ref` - Reference model in params
 
 ### Operations
@@ -337,7 +337,7 @@ phases: {
 ## Validation Cheat Sheet
 
 ### Runtime Validates
-1. ✅ Event params → `actions[name].params`
+1. ✅ Event params → `events[name].params`
 2. ✅ Invoke input → `operations[name].input` (with $ref)
 3. ✅ Plug output → `operations[name].output` (with $ref)
 4. ✅ Assign updates → `data` schema (with $ref)
@@ -396,7 +396,7 @@ Runtime parses strings into functions.
 
 4. **Events are Transient**
    - ❌ Don't persist unless assigned
-   - ✅ Validate against actions.params
+   - ✅ Validate against events.params
    - ✅ Flow into operations
 
 5. **Operations Define Contracts**
