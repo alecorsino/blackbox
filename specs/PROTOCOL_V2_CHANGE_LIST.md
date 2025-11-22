@@ -14,6 +14,7 @@ This document captures design questions and proposed changes for the Blackbox Pr
 **Why**: Superfluous for terminal use; we're building something terminal-capable, not just GUI
 
 **Where**:
+
 - EventDefinition interface definition
 - All examples showing events
 - JSON Schema definition
@@ -29,11 +30,13 @@ This document captures design questions and proposed changes for the Blackbox Pr
 **Observation**: Both use DataSchemaField, both define structure and validation
 
 **Current state**:
+
 - `events.SEARCH.params` - validates what user sends via `do()`
 - `operations.searchProducts.input` - validates what plug receives
 - Often these are the same or very similar schemas
 
 **Need to decide**:
+
 - Should these be unified (one concept)?
 - Or do they serve genuinely different purposes?
 - If different: what's the clear distinction and when would they differ?
@@ -48,18 +51,20 @@ This document captures design questions and proposed changes for the Blackbox Pr
 **Goal**: Make properties self-documenting - understand what they do and when WITHOUT reading documentation
 
 **Current state** (Phase interface):
+
 ```typescript
 interface Phase {
-  on?: Record<string, Transition>;  // Event handlers
-  invoke?: InvokeConfig;            // Async operation on entry
-  entry?: string | string[];        // Action(s) on entry
-  exit?: string | string[];         // Action(s) on exit
-  tags?: string[];                  // For grouping/filtering
-  type?: 'final';                   // Mark as terminal state
+  on?: Record<string, Transition>; // Event handlers
+  invoke?: InvokeConfig; // Async operation on entry
+  entry?: string | string[]; // Action(s) on entry
+  exit?: string | string[]; // Action(s) on exit
+  tags?: string[]; // For grouping/filtering
+  type?: 'final'; // Mark as terminal state
 }
 ```
 
 **Problems**:
+
 - `on` - handles events, but not intuitive
 - `invoke` - when does it run? (on entry, but not clear)
 - `invoke.src` - doesn't follow `on*` pattern like `onDone`, `onError`
@@ -67,6 +72,7 @@ interface Phase {
 - Mix of patterns: `on`, `invoke`, `entry/exit`
 
 **Need to decide**:
+
 - Consistent naming pattern that's self-documenting
 - When does each thing run?
 - Should everything follow `on*` pattern? (onEvent, onEntry, onExit, onInvoke?)
@@ -81,10 +87,12 @@ interface Phase {
 **Goal**: Make it intuitive how guards and conditions work together
 
 **Current state**:
+
 - Operation with `type: 'guard'` (returns boolean)
 - Referenced in transition with `cond: 'hasCartItems'`
 
 **Example**:
+
 ```typescript
 operations: {
   hasCartItems: { type: 'guard', ... }  // Define the guard
@@ -100,12 +108,14 @@ phases: {
 ```
 
 **Problems**:
+
 - Not obvious that `cond` references a `guard` operation
 - "cond" is abbreviation (condition)
 - "guard" is state machine jargon
 - Connection between the two isn't intuitive
 
 **Need to decide**:
+
 - Better names that make the relationship obvious
 - Should operation type match the property name? (`guard` vs `cond`)
 - More intuitive naming pattern that doesn't require state machine knowledge
@@ -121,23 +131,29 @@ phases: {
 **Current state**: No composition mechanism defined
 
 **Questions**:
+
 - Can we have a "program" within a "program"?
 - How to break down large workflows into smaller ones?
 - How to combine/compose them?
 - How would they be defined in the protocol?
+- What are the benefits of this? Why do we need this feature?
 
 **Use cases**:
+
 - Checkout flow that uses separate "payment-processing" program
 - Authentication flow reused across multiple programs
 - Multi-step forms broken into smaller sub-flows
 
 **Need to decide**:
+
 - Is this an `invoke` a sub-program? (new operation type: 'program'?)
 - Reference external programs by ID/path?
 - How does data flow between parent and child programs?
 - How do events bubble up/down?
 - Does child program run in same session or separate?
 - How to handle child completion (success/error/cancel)?
+- Can/Should this be defined in the protocol level as well the runtime/session
+- Can this be easier to implement/ use if this is a runtime things that orchestrate multiple sessions and the protocol just define the ref to another program?
 
 **Status**: 🔴 Not Started
 
@@ -148,6 +164,7 @@ phases: {
 **Goal**: Simplify and make it more intuitive where required is declared
 
 **Current state**:
+
 ```typescript
 models: {
   Product: {
@@ -163,6 +180,7 @@ models: {
 ```
 
 **Proposed**:
+
 ```typescript
 models: {
   Product: {
@@ -178,6 +196,7 @@ models: {
 ```
 
 **Benefits**:
+
 - More intuitive - see required status next to the field
 - Less duplication (don't repeat field names)
 - Easier to maintain
@@ -186,6 +205,7 @@ models: {
 **Note**: This affects `models`, `operations.input`, `operations.output` schemas
 
 **Changes made**:
+
 - Removed `required?: string[]` from DataSchema interface
 - Updated all examples in BLACKBOX_PROTOCOL_V2.md to use inline `required: true`
 - Updated JSON Schema definition to remove required array property
@@ -201,12 +221,14 @@ models: {
 **What**: Move section 11 "Complete Example" from BLACKBOX_PROTOCOL_V2.md to its own file
 
 **Why**:
+
 - Easier to update independently
 - Keep spec doc focused on specification
 - Example might have errors and will change as we iterate
 - Better maintainability
 
 **Action**:
+
 - Create new file: `specs/examples/shopping-checkout.program.json` (or `.ts`)
 - Replace section 11 in spec with link to the example file
 - Keep example up to date with protocol changes separately
@@ -220,6 +242,7 @@ models: {
 **Goal**: Make it clear what state fields actions modify and validate state mutations
 
 **Current state** (too generic):
+
 ```typescript
 operations: {
   storeSearchResults: {
@@ -231,6 +254,7 @@ operations: {
 ```
 
 **Problems**:
+
 - No connection between action and `data` schema
 - Can't validate that action updates are valid for the data model
 - No way to know which data fields this action modifies
@@ -238,10 +262,12 @@ operations: {
 - Runtime can't verify action is updating state correctly
 
 **Questions to decide**:
+
 - Should `output` reference specific fields from `data`?
 - Should actions declare which data fields they modify?
 
 **Example possibilities**:
+
 ```typescript
 // Option A: Explicit data field references
 storeSearchResults: {
@@ -264,10 +290,12 @@ storeSearchResults: {
 ```
 
 **Additional questions**:
+
 - How to validate that action outputs are compatible with data schema?
 - Should runtime enforce that actions only modify declared fields?
+- Would this make the protocol more verbose and rigid but safer, maybe is that a good thing?
 
-**Status**: 🔴 Not Started
+  **Status**: 🔴 Not Started
 
 ---
 
