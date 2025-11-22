@@ -1164,242 +1164,54 @@ The example is kept synchronized with protocol changes and serves as a reference
 
 ## 12. JSON Schema
 
-The formal JSON Schema definition for Blackbox Protocol v2.0:
+The formal JSON Schema definition for validating Blackbox Protocol v2.0 programs has been extracted to a separate file for easier maintenance and use with validation tools.
+
+**→ [schema/blackbox-program-v2.schema.json](schema/blackbox-program-v2.schema.json)**
+
+### What is the JSON Schema for?
+
+The JSON Schema provides machine-readable validation rules for Blackbox programs. It enables:
+
+- **Validation tools**: Verify program structure before runtime
+- **IDE support**: Auto-completion and error checking in editors
+- **CI/CD integration**: Validate programs in build pipelines
+- **Documentation generation**: Auto-generate reference docs from the schema
+
+### How to use the schema
+
+#### Validate a program file (using ajv-cli):
+
+```bash
+npm install -g ajv-cli
+ajv validate -s schema/blackbox-program-v2.schema.json -d my-program.program.json
+```
+
+#### Validate in Node.js:
+
+```javascript
+const Ajv = require('ajv');
+const schema = require('./schema/blackbox-program-v2.schema.json');
+const program = require('./my-program.program.json');
+
+const ajv = new Ajv();
+const validate = ajv.compile(schema);
+const valid = validate(program);
+
+if (!valid) {
+  console.error(validate.errors);
+}
+```
+
+#### Use in IDE (VS Code):
+
+Add to your `.program.json` files:
 
 ```json
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://blackbox.dev/schemas/program-v2.json",
-  "title": "Blackbox Program",
-  "type": "object",
-  "required": ["id", "version", "operations", "phases"],
-  "properties": {
-    "id": {
-      "type": "string",
-      "description": "Unique workflow identifier",
-      "minLength": 1
-    },
-    "version": {
-      "type": "string",
-      "description": "Semantic version",
-      "pattern": "^\\d+\\.\\d+\\.\\d+$"
-    },
-    "initial": {
-      "type": "string",
-      "description": "Starting phase name"
-    },
-    "models": {
-      "type": "object",
-      "description": "Domain type definitions",
-      "additionalProperties": {
-        "$ref": "#/definitions/DataSchema"
-      }
-    },
-    "data": {
-      "type": "object",
-      "description": "Session state schema",
-      "additionalProperties": {
-        "$ref": "#/definitions/DataSchemaField"
-      }
-    },
-    "events": {
-      "type": "object",
-      "description": "User-triggerable events",
-      "additionalProperties": {
-        "$ref": "#/definitions/EventDefinition"
-      }
-    },
-    "operations": {
-      "type": "object",
-      "description": "Operation contracts",
-      "minProperties": 1,
-      "additionalProperties": {
-        "$ref": "#/definitions/OperationContract"
-      }
-    },
-    "phases": {
-      "type": "object",
-      "description": "State machine phases",
-      "minProperties": 1,
-      "additionalProperties": {
-        "$ref": "#/definitions/Phase"
-      }
-    }
-  },
-  "definitions": {
-    "DataSchema": {
-      "type": "object",
-      "required": ["type"],
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": ["object", "array", "string", "number", "boolean"]
-        },
-        "properties": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/DataSchemaField"
-          }
-        },
-        "items": {
-          "$ref": "#/definitions/DataSchemaField"
-        },
-        "minLength": { "type": "number" },
-        "maxLength": { "type": "number" },
-        "min": { "type": "number" },
-        "max": { "type": "number" },
-        "pattern": { "type": "string" }
-      }
-    },
-    "DataSchemaField": {
-      "type": "object",
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": ["string", "number", "boolean", "array", "object"]
-        },
-        "$ref": {
-          "type": "string",
-          "pattern": "^#/models/"
-        },
-        "default": {},
-        "required": { "type": "boolean" },
-        "minLength": { "type": "number" },
-        "maxLength": { "type": "number" },
-        "min": { "type": "number" },
-        "max": { "type": "number" },
-        "pattern": { "type": "string" },
-        "items": {
-          "$ref": "#/definitions/DataSchemaField"
-        },
-        "properties": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/DataSchemaField"
-          }
-        }
-      }
-    },
-    "EventDefinition": {
-      "type": "object",
-      "required": ["label"],
-      "properties": {
-        "label": { "type": "string" },
-        "description": { "type": "string" },
-        "params": {
-          "type": "object",
-          "additionalProperties": {
-            "$ref": "#/definitions/DataSchemaField"
-          }
-        }
-      }
-    },
-    "OperationContract": {
-      "type": "object",
-      "required": ["type", "input", "output"],
-      "properties": {
-        "type": {
-          "type": "string",
-          "enum": ["service", "action", "guard"]
-        },
-        "description": { "type": "string" },
-        "input": {
-          "$ref": "#/definitions/DataSchema"
-        },
-        "output": {
-          "$ref": "#/definitions/DataSchema"
-        },
-        "metadata": {
-          "type": "object",
-          "properties": {
-            "intent": { "type": "string" },
-            "service": { "type": "string" },
-            "operation": { "type": "string" },
-            "specRef": { "type": "string" },
-            "timeout": { "type": "number" },
-            "retries": { "type": "number" },
-            "cacheable": { "type": "boolean" },
-            "ttl": { "type": "number" }
-          }
-        }
-      }
-    },
-    "Phase": {
-      "type": "object",
-      "properties": {
-        "on": {
-          "type": "object",
-          "additionalProperties": {
-            "oneOf": [
-              { "type": "string" },
-              { "$ref": "#/definitions/Transition" },
-              {
-                "type": "array",
-                "items": { "$ref": "#/definitions/Transition" }
-              }
-            ]
-          }
-        },
-        "invoke": {
-          "$ref": "#/definitions/InvokeConfig"
-        },
-        "entry": {
-          "oneOf": [
-            { "type": "string" },
-            { "type": "array", "items": { "type": "string" } }
-          ]
-        },
-        "exit": {
-          "oneOf": [
-            { "type": "string" },
-            { "type": "array", "items": { "type": "string" } }
-          ]
-        },
-        "tags": {
-          "type": "array",
-          "items": { "type": "string" }
-        },
-        "type": {
-          "type": "string",
-          "enum": ["final"]
-        }
-      }
-    },
-    "Transition": {
-      "type": "object",
-      "required": ["target"],
-      "properties": {
-        "target": { "type": "string" },
-        "guard": { "type": "string" },
-        "actions": {
-          "oneOf": [
-            { "type": "string" },
-            { "type": "array", "items": { "type": "string" } }
-          ]
-        }
-      }
-    },
-    "InvokeConfig": {
-      "type": "object",
-      "required": ["src"],
-      "properties": {
-        "src": { "type": "string" },
-        "input": { "type": "string" },
-        "onDone": {
-          "oneOf": [
-            { "type": "string" },
-            { "$ref": "#/definitions/Transition" }
-          ]
-        },
-        "onError": {
-          "oneOf": [
-            { "type": "string" },
-            { "$ref": "#/definitions/Transition" }
-          ]
-        }
-      }
-    }
-  }
+  "$schema": "./schema/blackbox-program-v2.schema.json",
+  "id": "my-program",
+  "version": "1.0.0",
+  ...
 }
 ```
 

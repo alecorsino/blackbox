@@ -153,6 +153,9 @@ phases: {
 - How to combine/compose them?
 - How would they be defined in the protocol?
 - What are the benefits of this? Why do we need this feature?
+- Event communication between programs
+- Parallel program invocation
+- Program lifecycle events (onStart, onPause, etc.)
 
 **Use cases**:
 
@@ -335,7 +338,16 @@ storeSearchResults: {
   - Brief explanation of what the schema is for
   - Usage instructions (how to validate programs against it)
 
-**Status**: 🔴 Not Started
+**Changes made**:
+
+- Created `specs/schema/` directory
+- Created `specs/schema/blackbox-program-v2.schema.json` with complete JSON Schema
+- Replaced section 12 in BLACKBOX_PROTOCOL_V2.md with:
+  - Link to schema file
+  - Explanation of what the schema is for
+  - Usage examples (ajv-cli, Node.js, VS Code)
+
+**Status**: 🟢 Completed
 
 ---
 
@@ -347,7 +359,7 @@ Each item should be tackled in a separate focused session:
 2. **Session 2**: Item #7 (Quick win - file organization) ✅
 3. **Session 3**: Item #6 (Medium - schema restructuring) ✅
 4. **Session 4**: Item #4 (Design - guard/cond naming) ✅
-5. **Session 5**: Item #9 (Quick win - extract JSON Schema)
+5. **Session 5**: Item #9 (Quick win - extract JSON Schema) ✅
 6. **Session 6**: Item #2 (Design - event params vs operation input)
 7. **Session 7**: Item #8 (Design - action operations and data)
 8. **Session 8**: Item #3 (Design - Phase property naming)
