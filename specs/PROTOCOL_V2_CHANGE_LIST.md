@@ -42,7 +42,33 @@ This document captures design questions and proposed changes for the Blackbox Pr
 - If different: what's the clear distinction and when would they differ?
 - If same: how to simplify without losing functionality?
 
-**Status**: 🔴 Not Started
+**Decision Made**:
+
+- **They serve different purposes** (event input = user-facing, operation input = plug-facing)
+- **BUT** they both represent "input data" - no need for different names
+- **Solution**: Rename `params` → `input` for naming consistency
+- Reduces conceptual vocabulary: one word (`input`) instead of two (`params` + `input`)
+- Follows the same principle as change #4 (renaming `cond` → `guard` to match operation type)
+
+**Changes made**:
+
+- Updated `EventDefinition` interface: `params?: Record<...>` → `input?: Record<...>`
+- Updated all examples in BLACKBOX_PROTOCOL_V2.md
+- Updated shopping-checkout.program.json example
+- Updated JSON Schema definition
+- Updated TypeScript definitions in Appendix A
+- Updated section "Layer 3: Event Params (Transient)" → "Layer 3: Event Input (Transient)"
+
+**Rationale**:
+
+Events and operations still serve different purposes:
+- **Event input**: Validates what the user provides via `do()`
+- **Operation input**: Validates what the plug receives
+- **Input computer** (`invoke.input`): Bridges them when transformation/enrichment needed
+
+But both are "input data" - using the same term makes the protocol easier to learn and reduces cognitive load.
+
+**Status**: 🟢 Completed
 
 ---
 

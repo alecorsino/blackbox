@@ -117,7 +117,7 @@
       "properties": {
         "label": { "type": "string" },
         "description": { "type": "string" },
-        "params": {
+        "input": {
           "type": "object",
           "additionalProperties": {
             "$ref": "#/definitions/DataSchemaField"

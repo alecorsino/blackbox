@@ -105,7 +105,7 @@
     "SEARCH": {
       "label": "Search products",
       "description": "Search the product catalog by keyword",
-      "params": {
+      "input": {
         "query": {
           "type": "string",
           "required": true,
@@ -117,7 +117,7 @@
 
     "ADD_TO_CART": {
       "label": "Add to cart",
-      "params": {
+      "input": {
         "productId": { "type": "string", "required": true },
         "quantity": { "type": "number", "default": 1, "min": 1, "max": 99 }
       }
@@ -125,7 +125,7 @@
 
     "REMOVE_FROM_CART": {
       "label": "Remove from cart",
-      "params": {
+      "input": {
         "productId": { "type": "string", "required": true }
       }
     },
@@ -136,14 +136,14 @@
 
     "SET_SHIPPING": {
       "label": "Set shipping address",
-      "params": {
+      "input": {
         "address": { "$ref": "#/models/Address", "required": true }
       }
     },
 
     "SET_PAYMENT": {
       "label": "Set payment method",
-      "params": {
+      "input": {
         "method": { "$ref": "#/models/PaymentMethod", "required": true }
       }
     },

@@ -170,17 +170,17 @@ data: {
 
 **Mutated by**: Operations with `type: 'action'` via the `assign` pattern.
 
-### Layer 3: Event Params (Transient)
+### Layer 3: Event Input (Transient)
 
 **PURPOSE**: Capture one-time user input that triggers transitions.
 
 ```typescript
 // User calls: session.do('SEARCH', { query: 'laptop' })
-// Event params: { query: 'laptop' }
-// Validated against: events.SEARCH.params
+// Event input: { query: 'laptop' }
+// Validated against: events.SEARCH.input
 ```
 
-**Flow**: Event params → validate → trigger transition → may update data via actions → discarded.
+**Flow**: Event input → validate → trigger transition → may update data via actions → discarded.
 
 ---
 
@@ -194,7 +194,7 @@ data: {
 interface EventDefinition {
   label: string;                            // Human-readable name (REQUIRED)
   description?: string;                     // Detailed explanation
-  params?: Record<string, DataSchemaField>; // Parameter schema for validation
+  input?: Record<string, DataSchemaField>;  // Input schema for validation
 }
 ```
 
@@ -205,7 +205,7 @@ events: {
   SEARCH: {
     label: "Search products",
     description: "Search the product catalog by keyword",
-    params: {
+    input: {
       query: {
         type: 'string',
         required: true,
@@ -224,7 +224,7 @@ events: {
 
   ADD_TO_CART: {
     label: "Add to cart",
-    params: {
+    input: {
       productId: { type: 'string', required: true },
       quantity: { type: 'number', default: 1, min: 1, max: 99 }
     }
@@ -243,7 +243,7 @@ session.can() // → ['SEARCH', 'ADD_TO_CART', 'CHECKOUT']
 // Can return full metadata for UI rendering
 session.can({ withMetadata: true })
 // → [
-//     { event: 'SEARCH', label: 'Search products', params: {...} },
+//     { event: 'SEARCH', label: 'Search products', input: {...} },
 //     ...
 //   ]
 ```
@@ -254,7 +254,7 @@ session.can({ withMetadata: true })
 // User triggers event
 session.do('SEARCH', { query: 'laptop' })
 
-// Runtime validates params against events.SEARCH.params
+// Runtime validates input against events.SEARCH.input
 // If valid → fires event to state machine
 // If invalid → throws validation error
 ```
@@ -278,7 +278,7 @@ phases: {
 
 Events define:
 - ✅ **What actions exist** (discoverable via `can()`)
-- ✅ **What inputs they need** (params schema)
+- ✅ **What inputs they need** (input schema)
 - ✅ **How to present them** (label, description)
 - ✅ **When they're available** (based on current phase)
 
@@ -806,7 +806,7 @@ operations: {
 events: {
   VIEW_PRODUCT: {
     label: 'View product',
-    params: {
+    input: {
       product: { $ref: '#/models/Product' }
     }
   }
@@ -1119,8 +1119,8 @@ data: {
 ### Event-Level Validation
 
 1. ✅ `label` is required for each event
-2. ✅ `params` schemas can use `$ref`
-3. ✅ `params` fields with `$ref` must resolve to valid models
+2. ✅ `input` schemas can use `$ref`
+3. ✅ `input` fields with `$ref` must resolve to valid models
 4. ✅ Event names used in `phases[].on` should exist in `events` (warning if not)
 
 ### Data-Level Validation
@@ -1263,7 +1263,7 @@ export interface DataSchemaField {
 export interface EventDefinition {
   label: string;
   description?: string;
-  params?: Record<string, DataSchemaField>;
+  input?: Record<string, DataSchemaField>;
 }
 
 export interface OperationContract {
