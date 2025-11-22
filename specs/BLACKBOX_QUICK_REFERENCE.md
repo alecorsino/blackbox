@@ -74,7 +74,7 @@ TRANSIENT → event   ({ query: "laptop" })
   output: { type: 'boolean' }
 }
 ```
-**Used in**: `transition.cond`
+**Used in**: `transition.guard`
 **Plug**: `(data, event) => boolean`
 
 ---
@@ -92,12 +92,12 @@ TRANSIENT → event   ({ query: "laptop" })
     EVENT: "targetPhase",           // Simple
     EVENT: {                        // With guard
       target: "targetPhase",
-      cond: "guardOp",
+      guard: "guardOp",
       actions: ["action1", "action2"]
     },
     EVENT: [                        // Multiple guards
-      { target: "phase1", cond: "guard1" },
-      { target: "phase2", cond: "guard2" },
+      { target: "phase1", guard: "guard1" },
+      { target: "phase2", guard: "guard2" },
       { target: "phase3" }          // Fallback
     ]
   },
@@ -245,7 +245,7 @@ Use this to ensure you're using all available features:
 - [ ] `phases` - State definitions
 - [ ] `phases[name].on` - Event transitions
 - [ ] Simple transition: `EVENT: "target"`
-- [ ] Guarded transition: `{ target, cond, actions }`
+- [ ] Guarded transition: `{ target, guard, actions }`
 - [ ] Multiple guards: `[{...}, {...}]`
 - [ ] `phases[name].invoke` - Async operation
 - [ ] `invoke.src` - Operation name
@@ -283,8 +283,8 @@ operations: {
 ```typescript
 on: {
   SUBMIT: [
-    { target: 'fastTrack', cond: 'isVIP' },
-    { target: 'review', cond: 'isLarge' },
+    { target: 'fastTrack', guard: 'isVIP' },
+    { target: 'review', guard: 'isLarge' },
     { target: 'autoApprove' }  // Default
   ]
 }
@@ -303,7 +303,7 @@ phases: {
   failed: {
     on: {
       RETRY: [
-        { target: 'processing', cond: 'canRetry' },
+        { target: 'processing', guard: 'canRetry' },
         { target: 'maxRetries' }
       ]
     }

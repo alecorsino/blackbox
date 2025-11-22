@@ -334,11 +334,11 @@
       "on": {
         "SEARCH": {
           "target": "searching",
-          "cond": "hasQuery"
+          "guard": "hasQuery"
         },
         "CHECKOUT": {
           "target": "reviewingCart",
-          "cond": "hasCartItems"
+          "guard": "hasCartItems"
         }
       }
     },
@@ -366,11 +366,11 @@
         "ADD_TO_CART": "addingToCart",
         "SEARCH": {
           "target": "searching",
-          "cond": "hasQuery"
+          "guard": "hasQuery"
         },
         "CHECKOUT": {
           "target": "reviewingCart",
-          "cond": "hasCartItems"
+          "guard": "hasCartItems"
         }
       }
     },
@@ -407,7 +407,7 @@
         "REMOVE_FROM_CART": "removingFromCart",
         "CHECKOUT": {
           "target": "enteringShipping",
-          "cond": "hasCartItems"
+          "guard": "hasCartItems"
         },
         "CANCEL": "browsing"
       }
@@ -460,7 +460,7 @@
         "onDone": [
           {
             "target": "paymentCompleted",
-            "cond": "(data, event) => event.data.success === true"
+            "guard": "(data, event) => event.data.success === true"
           },
           {
             "target": "paymentFailed",
@@ -480,7 +480,7 @@
         "RETRY": [
           {
             "target": "processingPayment",
-            "cond": "canRetry"
+            "guard": "canRetry"
           },
           {
             "target": "maxRetriesExceeded"

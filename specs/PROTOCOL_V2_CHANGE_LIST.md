@@ -120,7 +120,23 @@ phases: {
 - Should operation type match the property name? (`guard` vs `cond`)
 - More intuitive naming pattern that doesn't require state machine knowledge
 
-**Status**: 🔴 Not Started
+**Decision Made**:
+
+- **Option chosen**: Match the names (guard ↔ guard)
+- Changed `cond` property to `guard` to match the operation type name
+- Follows precedent of `invoke.src` referencing `service` type operations
+- Provides consistency across the protocol
+
+**Changes made**:
+
+- Updated `Transition` interface: `cond?: string` → `guard?: string`
+- Updated all examples in BLACKBOX_PROTOCOL_V2.md
+- Updated shopping-checkout.program.json example
+- Updated BLACKBOX_QUICK_REFERENCE.md
+- Updated JSON Schema definition
+- Updated TypeScript definitions in Appendix A
+
+**Status**: 🟢 Completed
 
 ---
 
@@ -299,18 +315,43 @@ storeSearchResults: {
 
 ---
 
+## 9. Extract JSON Schema to separate file
+
+**What**: Move section 12 "JSON Schema" from BLACKBOX_PROTOCOL_V2.md to its own file
+
+**Why**:
+
+- JSON Schema is reference material, not core specification
+- Easier to maintain and version independently
+- Keeps main spec focused on conceptual understanding
+- Can be used as standalone artifact for validation tools
+- Reduces size of main specification document
+
+**Action**:
+
+- Create new file: `specs/schema/blackbox-program-v2.schema.json`
+- Replace section 12 in spec with:
+  - Link to the schema file
+  - Brief explanation of what the schema is for
+  - Usage instructions (how to validate programs against it)
+
+**Status**: 🔴 Not Started
+
+---
+
 ## Session Plan
 
 Each item should be tackled in a separate focused session:
 
-1. **Session 1**: Item #1 (Quick win - simple removal)
-2. **Session 2**: Item #7 (Quick win - file organization)
-3. **Session 3**: Item #6 (Medium - schema restructuring)
-4. **Session 4**: Item #2 (Design - event params vs operation input)
-5. **Session 5**: Item #8 (Design - action operations and data)
-6. **Session 6**: Item #4 (Design - guard/cond naming)
-7. **Session 7**: Item #3 (Design - Phase property naming)
-8. **Session 8**: Item #5 (Major design - program composition)
+1. **Session 1**: Item #1 (Quick win - simple removal) ✅
+2. **Session 2**: Item #7 (Quick win - file organization) ✅
+3. **Session 3**: Item #6 (Medium - schema restructuring) ✅
+4. **Session 4**: Item #4 (Design - guard/cond naming) ✅
+5. **Session 5**: Item #9 (Quick win - extract JSON Schema)
+6. **Session 6**: Item #2 (Design - event params vs operation input)
+7. **Session 7**: Item #8 (Design - action operations and data)
+8. **Session 8**: Item #3 (Design - Phase property naming)
+9. **Session 9**: Item #5 (Major design - program composition)
 
 ---
 

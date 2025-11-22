@@ -397,7 +397,7 @@ plugs: {
 
 **Signature**: `(data, event) => boolean`
 
-**Used in**: `transition.cond`
+**Used in**: `transition.guard`
 
 **Example**:
 ```typescript
@@ -458,7 +458,7 @@ operations: {
 |----------------|---------|---------|
 | `service` | `invoke.src` | Async work on phase entry |
 | `action` | `entry`, `exit`, `transition.actions` | State mutations |
-| `guard` | `transition.cond`, `invoke.onDone[].cond` | Conditional logic |
+| `guard` | `transition.guard`, `invoke.onDone[].guard` | Conditional logic |
 
 ---
 
@@ -497,7 +497,7 @@ phases: {
       SEARCH: 'searching',         // Simple transition
       CHECKOUT: {                  // Guarded transition
         target: 'reviewingCart',
-        cond: 'hasCartItems'
+        guard: 'hasCartItems'
       }
     }
   }
@@ -522,7 +522,7 @@ on: {
 on: {
   CHECKOUT: {
     target: 'payment',
-    cond: 'hasCartItems',           // Guard operation
+    guard: 'hasCartItems',           // Guard operation
     actions: ['calculateTotal', 'applyTax']  // Run before transition
   }
 }
@@ -533,8 +533,8 @@ on: {
 ```typescript
 on: {
   SUBMIT: [
-    { target: 'fastTrack', cond: 'isVIP' },
-    { target: 'review', cond: 'isLarge' },
+    { target: 'fastTrack', guard: 'isVIP' },
+    { target: 'review', guard: 'isLarge' },
     { target: 'autoApprove' }  // Default if no guards match
   ]
 }
@@ -1100,10 +1100,10 @@ data: {
 2. ✅ `on` targets must reference existing phases
 3. ✅ `invoke.src` must reference existing operation
 4. ✅ `invoke` operation must be type `service`
-5. ✅ `invoke.onDone` can have inline `cond` guards that are valid functions
+5. ✅ `invoke.onDone` can have inline `guard` guards that are valid functions
 6. ✅ `entry`/`exit` must reference existing operations
 7. ✅ `entry`/`exit` operations should be type `action` (warning if `service`)
-8. ✅ `cond` must reference existing operation of type `guard`
+8. ✅ `guard` must reference existing operation of type `guard`
 9. ✅ `transition.actions` must reference existing operations of type `action`
 10. ✅ Final phases (`type: 'final'`) cannot have `on` transitions
 
@@ -1370,7 +1370,7 @@ The formal JSON Schema definition for Blackbox Protocol v2.0:
       "required": ["target"],
       "properties": {
         "target": { "type": "string" },
-        "cond": { "type": "string" },
+        "guard": { "type": "string" },
         "actions": {
           "oneOf": [
             { "type": "string" },
@@ -1486,7 +1486,7 @@ export type Transition =
   | string
   | {
       target: string;
-      cond?: string;
+      guard?: string;
       actions?: string | string[];
     };
 
