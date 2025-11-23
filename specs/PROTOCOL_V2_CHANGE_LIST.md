@@ -5,6 +5,8 @@
 
 This document captures design questions and proposed changes for the Blackbox Protocol v2.0 specification. Each item will be addressed in separate sessions.
 
+**📖 Design Guidance**: When making decisions, consult [BLACKBOX_ARCHITECTURE.md](BLACKBOX_ARCHITECTURE.md) for the foundational principles that separate protocol concerns from runtime concerns and guide architectural decisions.
+
 ---
 
 ## 1. Remove `icon` from EventDefinition
@@ -62,6 +64,7 @@ This document captures design questions and proposed changes for the Blackbox Pr
 **Rationale**:
 
 Events and operations still serve different purposes:
+
 - **Event input**: Validates what the user provides via `do()`
 - **Operation input**: Validates what the plug receives
 - **Input computer** (`invoke.input`): Bridges them when transformation/enrichment needed
@@ -386,7 +389,7 @@ Each item should be tackled in a separate focused session:
 3. **Session 3**: Item #6 (Medium - schema restructuring) ✅
 4. **Session 4**: Item #4 (Design - guard/cond naming) ✅
 5. **Session 5**: Item #9 (Quick win - extract JSON Schema) ✅
-6. **Session 6**: Item #2 (Design - event params vs operation input)
+6. **Session 6**: Item #2 (Design - event params vs operation input) ✅
 7. **Session 7**: Item #8 (Design - action operations and data)
 8. **Session 8**: Item #3 (Design - Phase property naming)
 9. **Session 9**: Item #5 (Major design - program composition)
